@@ -15,6 +15,7 @@ import video_transforms
 import models
 import datasets
 
+# print ">>> models.__dict__={}".format(models.__dict__)
 model_names = sorted(name for name in models.__dict__
     if name.islower() and not name.startswith("__")
     and callable(models.__dict__[name]))
@@ -30,8 +31,8 @@ parser.add_argument('--modality', '-m', metavar='MODALITY', default='rgb',
                     choices=["rgb", "flow"],
                     help='modality: rgb | flow')
 parser.add_argument('--dataset', '-d', default='ucf101',
-                    choices=["ucf101", "hmdb51"],
-                    help='dataset: ucf101 | hmdb51')
+                    choices=["ucf101", "hmdb51", "MCI"],
+                    help='dataset: ucf101 | hmdb51 | MCI')
 parser.add_argument('--arch', '-a', metavar='ARCH', default='rgb_resnet152',
                     choices=model_names,
                     help='model architecture: ' +
@@ -199,7 +200,6 @@ def main():
             }, is_best, checkpoint_name, args.resume)
 
 def build_model():
-
     model = models.__dict__[args.arch](pretrained=True, num_classes=101)
     model.cuda()
     return model
