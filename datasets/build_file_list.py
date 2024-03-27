@@ -5,6 +5,8 @@ import glob
 import random
 import fnmatch
 
+CURRENT_DIR = os.path.dirname(os.path.realpath(__file__))
+
 def parse_directory(path, rgb_prefix='img_', flow_x_prefix='flow_x_', flow_y_prefix='flow_y_'):
     """
     Parse directories holding extracted frames from standard benchmarks
@@ -31,7 +33,6 @@ def parse_directory(path, rgb_prefix='img_', flow_x_prefix='flow_x_', flow_y_pre
         flow_counts[k] = x_cnt
         if i % 200 == 0:
             print('{} videos parsed'.format(i))
-
     print('frame folder analysis done')
     return rgb_counts, flow_counts
 
@@ -56,8 +57,34 @@ def build_split_list(split_tuple, frame_info, split_idx, shuffle=False):
     return (train_rgb_list, test_rgb_list), (train_flow_list, test_flow_list)
 
 
+## For MCI:
+def parse_MCI_splits():
+    class_ind = [x.strip().split() for x in open('{}/MCI_splits/classInd.txt'.format(CURRENT_DIR))]
+    class_mapping = {x[1]:int(x[0])-1 for x in class_ind}
+    # print '>>> class_ind={}'.format(class_ind)
+    # print '>>> class_mapping={}'.format(class_mapping)
+
+    def line2rec(line):
+        # print '>>> [line2rec] line={}'.format(line)
+        items = line.strip().split('/')
+        # print '>>> items={}'.format(items)
+        label = class_mapping[items[0]]
+        vid = items[1].split('.')[0]
+        # print '>>> vid={}, label={}'.format(vid, label)
+        return vid, label
+
+    splits = []
+    for i in xrange(1, 4):
+        train_list = [line2rec(x) for x in open('{}/MCI_splits/trainlist{:02d}.txt'.format(CURRENT_DIR, i))]
+        test_list = [line2rec(x) for x in open('{}/MCI_splits/testlist{:02d}.txt'.format(CURRENT_DIR, i))]
+        # print '>>> train_list={}'.format(train_list)
+        # print '>>> test_list={}'.format(test_list)
+        splits.append((train_list, test_list))
+    return splits
+
+
 def parse_ucf101_splits():
-    class_ind = [x.strip().split() for x in open('ucf101_splits/classInd.txt')]
+    class_ind = [x.strip().split() for x in open('{}/ucf101_splits/classInd.txt'.format(CURRENT_DIR))]
     class_mapping = {x[1]:int(x[0])-1 for x in class_ind}
 
     def line2rec(line):
@@ -68,8 +95,8 @@ def parse_ucf101_splits():
 
     splits = []
     for i in xrange(1, 4):
-        train_list = [line2rec(x) for x in open('ucf101_splits/trainlist{:02d}.txt'.format(i))]
-        test_list = [line2rec(x) for x in open('ucf101_splits/testlist{:02d}.txt'.format(i))]
+        train_list = [line2rec(x) for x in open('{}/ucf101_splits/trainlist{:02d}.txt'.format(CURRENT_DIR, i))]
+        test_list = [line2rec(x) for x in open('{}/ucf101_splits/testlist{:02d}.txt'.format(CURRENT_DIR, i))]
         splits.append((train_list, test_list))
     return splits
 
@@ -79,7 +106,7 @@ def parse_hmdb51_splits():
     class_files = glob.glob('hmdb51_splits/*split*.txt')
 
     # load class list
-    class_list = [x.strip() for x in open('hmdb51_splits/class_list.txt')]
+    class_list = [x.strip() for x in open('{}/hmdb51_splits/class_list.txt'.format(CURRENT_DIR))]
     class_dict = {x: i for i, x in enumerate(class_list)}
 
     def parse_class_file(filename):
@@ -111,7 +138,7 @@ def parse_hmdb51_splits():
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default='ucf101', choices=['ucf101', 'hmdb51'])
+    parser.add_argument('--dataset', type=str, default='ucf101', choices=['ucf101', 'hmdb51', 'MCI'])
     parser.add_argument('--frame_path', type=str, default='./ucf101_frames',
                         help="root directory holding the frames")
     parser.add_argument('--out_list_path', type=str, default='./settings')
@@ -147,8 +174,12 @@ if __name__ == '__main__':
     print('processing dataset {}'.format(dataset))
     if dataset=='ucf101':
         split_tp = parse_ucf101_splits()
-    else:
+    elif dataset=='hmdb51':
         split_tp = parse_hmdb51_splits()
+    elif dataset=='MCI':
+        split_tp = parse_MCI_splits()
+    else:
+        raise Exception('[Error] Unrecognized dataset')
     f_info = parse_directory(frame_path, rgb_p, flow_x_p, flow_y_p)
 
     print('writing list files for training/testing')

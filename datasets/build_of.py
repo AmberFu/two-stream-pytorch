@@ -33,25 +33,49 @@ def run_optical_flow(vid_item):
     sys.stdout.flush()
     return True
 
+def run_optical_flow_CPU(vid_item):
+    vid_path = vid_item[0]
+    vid_id = vid_item[1]
+    vid_name = vid_path.split('/')[-1].split('.')[0]
+    out_full_path = os.path.join(out_path, vid_name)
+    try:
+        os.mkdir(out_full_path)
+    except OSError:
+        pass
+
+    current = current_process()
+    dev_id = (int(current._identity[0]) - 1) % NUM_GPU
+    image_path = '{}/img'.format(out_full_path)
+    flow_x_path = '{}/flow_x'.format(out_full_path)
+    flow_y_path = '{}/flow_y'.format(out_full_path)
+
+    cmd = os.path.join(df_path + 'build/extract_cpu')+' -f {} -x {} -y {} -i {} -b 20 -t 1 -d {} -s 1 -o {} -w {} -h {}'.format(
+        quote(vid_path), quote(flow_x_path), quote(flow_y_path), quote(image_path), dev_id, out_format, new_size[0], new_size[1])
+
+    os.system(cmd)
+    print('{} {} done'.format(vid_id, vid_name))
+    sys.stdout.flush()
+    return True
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description="extract optical flows")
+    parser = argparse.ArgumentParser(
+        description="extract optical flows. Video file extensions can ONLY be .avi and .mp4 in lower case")
     parser.add_argument("--src_dir", type=str, default='./UCF-101',
                         help='path to the video data')
     parser.add_argument("--out_dir", type=str, default='./ucf101_frames',
                         help='path to store frames and optical flow')
-    parser.add_argument("--df_path", type=str, default='./dense_flow/',
+    parser.add_argument("--df_path", type=str, default='/opt/dense_flow/',
                         help='path to the dense_flow toolbox')
 
-    parser.add_argument("--new_width", type=int, default=0, help='resize image width')
-    parser.add_argument("--new_height", type=int, default=0, help='resize image height')
+    parser.add_argument("--new_width", type=int, default=0, help='resize image width (default:0)')
+    parser.add_argument("--new_height", type=int, default=0, help='resize image height (default:0)')
 
     parser.add_argument("--num_worker", type=int, default=8)
     parser.add_argument("--num_gpu", type=int, default=2, help='number of GPU')
-    parser.add_argument("--out_format", type=str, default='dir', choices=['dir','zip'],
-                        help='path to the dense_flow toolbox')
-    parser.add_argument("--ext", type=str, default='avi', choices=['avi','mp4'],
-                        help='video file extensions')
+    parser.add_argument("--out_format", type=str, default='dir', choices=['dir','zip'])
+    # parser.add_argument("--ext", type=str, default='avi', choices=['avi','mp4'],
+    #                     help='video file extensions')
+    parser.add_argument("--cpu_only", type=bool, default=False)
 
     args = parser.parse_args()
 
@@ -60,16 +84,24 @@ if __name__ == '__main__':
     num_worker = args.num_worker
     df_path = args.df_path
     out_format = args.out_format
-    ext = args.ext
+    # ext = args.ext
     new_size = (args.new_width, args.new_height)
     NUM_GPU = args.num_gpu
+    CPU_ONLY = args.cpu_only
 
     if not os.path.isdir(out_path):
         print("creating folder: "+out_path)
         os.makedirs(out_path)
 
-    vid_list = glob.glob(src_path+'/*/*.'+ext)
-    print(len(vid_list))
+    # vid_list = glob.glob(src_path+'/*/*.'+ext)
+    vid_list = glob.glob(src_path+'/*/*.mp4')
+    vid_list.extend(glob.glob(src_path+'/*/*.avi'))
+    print("{} of video detected".format(len(vid_list)))
     pool = Pool(num_worker)
-    pool.map(run_optical_flow, zip(vid_list, xrange(len(vid_list))))
+    if CPU_ONLY:
+        print("Using {} of CPU...".format(num_worker))
+        pool.map(run_optical_flow_CPU, zip(vid_list, xrange(len(vid_list))))
+    else:
+        print("Using {} of CPU and {} of GPU...".format(num_worker, NUM_GPU))
+        pool.map(run_optical_flow, zip(vid_list, xrange(len(vid_list))))
 
