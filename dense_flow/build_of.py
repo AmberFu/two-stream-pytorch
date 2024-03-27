@@ -87,7 +87,9 @@ def run_optical_flow_CPU(vid_item, dev_id=0):
     except OSError:
         pass
     current = current_process()
+    print ">>> current = {}".format(current)
     dev_id = int(current._identity[0]) - 1
+    print ">>> dev_id = {}".format(dev_id)
     image_path = '{}/img'.format(out_full_path)
     flow_x_path = '{}/flow_x'.format(out_full_path)
     flow_y_path = '{}/flow_y'.format(out_full_path)
