@@ -43,13 +43,17 @@ def run_optical_flow(vid_item, dev_id=0):
         pass
 
     current = current_process()
+    print ">>> current = {}".format(current)
     dev_id = int(current._identity[0]) - 1
+    print ">>> dev_id = {}".format(dev_id)
     image_path = '{}/img'.format(out_full_path)
     flow_x_path = '{}/flow_x'.format(out_full_path)
     flow_y_path = '{}/flow_y'.format(out_full_path)
 
     cmd = '{}/build/extract_gpu -f={} -x={} -y={} -i={} -b=20 -t=1 -d={} -s=1 -o {} -w {} -h {}'.format(
         CURRENT_DIR, vid_path, flow_x_path, flow_y_path, image_path, dev_id, out_format, new_size[0],new_size[1])
+
+    print ">>> cmd: {}".format(cmd)
 
     os.system(cmd)
     print '{} {} done'.format(vid_id, vid_name)
@@ -72,6 +76,7 @@ def run_warp_optical_flow(vid_item, dev_id=0):
     flow_y_path = '{}/flow_y'.format(out_full_path)
     cmd = '{}/build/extract_warp_gpu -f {} -x {} -y {} -b 20 -t 1 -d {} -s 1 -o {}'.format(
         CURRENT_DIR, vid_path, flow_x_path, flow_y_path, dev_id, out_format)
+    print ">>> cmd: {}".format(cmd)
     os.system(cmd)
     print 'warp on {} {} done'.format(vid_id, vid_name)
     return True
