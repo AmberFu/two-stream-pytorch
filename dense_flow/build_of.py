@@ -43,7 +43,7 @@ def run_optical_flow(vid_item, dev_id=0):
         pass
 
     current = current_process()
-    dev_id = (int(current._identity[0]) - 1) % NUM_GPU
+    dev_id = int(current._identity[0]) - 1
     image_path = '{}/img'.format(out_full_path)
     flow_x_path = '{}/flow_x'.format(out_full_path)
     flow_y_path = '{}/flow_y'.format(out_full_path)
@@ -67,7 +67,7 @@ def run_warp_optical_flow(vid_item, dev_id=0):
         pass
 
     current = current_process()
-    dev_id = (int(current._identity[0]) - 1) % NUM_GPU
+    dev_id = int(current._identity[0]) - 1
     flow_x_path = '{}/flow_x'.format(out_full_path)
     flow_y_path = '{}/flow_y'.format(out_full_path)
     cmd = '{}/build/extract_warp_gpu -f {} -x {} -y {} -b 20 -t 1 -d {} -s 1 -o {}'.format(
@@ -114,7 +114,6 @@ if __name__ == '__main__':
     parser.add_argument("--out_dir", type=str, default='./ucf101_frames',
                         help='path to store frames and optical flow')
     parser.add_argument("--num_worker", type=int, default=8)
-    parser.add_argument("--num_gpu", type=int, default=2, help='number of GPU')
     parser.add_argument("--flow_type", type=str, default='tvl1', 
                         choices=['tvl1', 'warp_tvl1', 'cpu_tvl1'])
     parser.add_argument("--new_width", type=int, default=0, help='resize image width')
@@ -129,7 +128,6 @@ if __name__ == '__main__':
     flow_type = args.flow_type
     new_size = (args.new_width, args.new_height)
     out_format = args.out_format
-    NUM_GPU = args.num_gpu
 
 
     vid_list = glob.glob(src_path+'/*/*.mp4')
